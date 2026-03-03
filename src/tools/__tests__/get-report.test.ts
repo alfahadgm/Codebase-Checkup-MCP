@@ -82,7 +82,7 @@ describe('handleGetReport', () => {
 
     const result = handleGetReport({ sessionId, format: 'markdown' });
     // Should have at least 3 content blocks: meta, report, roadmap
-    const allText = result.content.map(c => c.text).join('\n');
+    const allText = result.content.map((c) => c.text).join('\n');
     expect(allText).toContain('Remediation');
   });
 });

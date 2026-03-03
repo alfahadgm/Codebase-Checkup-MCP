@@ -12,7 +12,8 @@ export function registerResources(server: McpServer): void {
     'methodology',
     'checkup://methodology',
     {
-      description: 'The complete Checkup audit methodology — severity scoring, finding format, cross-referencing rules',
+      description:
+        'The complete Checkup audit methodology — severity scoring, finding format, cross-referencing rules',
       mimeType: 'text/markdown',
     },
     async () => ({
@@ -28,7 +29,7 @@ ${globalRules(0).replace('P0.', 'P[N].')}
 
 The 10 phases must run in order because each phase builds on findings from earlier phases:
 
-${ALL_PHASES.map(p => `- **${p.id}: ${p.name}** — ${p.description}`).join('\n')}
+${ALL_PHASES.map((p) => `- **${p.id}: ${p.name}** — ${p.description}`).join('\n')}
 
 ## Why This Order
 - P1 (Dead Code) identifies code to ignore in all later phases
@@ -82,7 +83,7 @@ ${ALL_PHASES.map(p => `- **${p.id}: ${p.name}** — ${p.description}`).join('\n'
 
 | Phase | Name | Description |
 |-------|------|-------------|
-${ALL_PHASES.map(p => `| ${p.id} | ${p.name} | ${p.description} |`).join('\n')}
+${ALL_PHASES.map((p) => `| ${p.id} | ${p.name} | ${p.description} |`).join('\n')}
 
 ## Dependencies
 - **P1** runs first — dead code identified here is excluded from all later phases

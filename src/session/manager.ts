@@ -1,6 +1,10 @@
 import {
-  AuditSession, PhaseConfig, PhaseResult,
-  FixItem, FixResult, SessionStatus,
+  AuditSession,
+  PhaseConfig,
+  PhaseResult,
+  FixItem,
+  FixResult,
+  SessionStatus,
 } from './types.js';
 import { buildFindingSummary } from '../lib/prompt-builder.js';
 import { logger } from '../lib/logger.js';
@@ -126,7 +130,7 @@ export function listSessions(): Array<{
   completedPhaseCount: number;
 }> {
   cleanExpiredSessions();
-  return Array.from(sessions.values()).map(s => ({
+  return Array.from(sessions.values()).map((s) => ({
     id: s.id,
     status: s.status,
     createdAt: s.createdAt,
@@ -139,10 +143,7 @@ export function listSessions(): Array<{
 /**
  * Transition session to fix mode. Sets the fix plan and updates status.
  */
-export function setFixPlan(
-  sessionId: string,
-  fixPlan: FixItem[],
-): AuditSession | undefined {
+export function setFixPlan(sessionId: string, fixPlan: FixItem[]): AuditSession | undefined {
   const session = sessions.get(sessionId);
   if (!session) return undefined;
   if (session.status !== 'complete') return undefined;
@@ -157,7 +158,7 @@ export function setFixPlan(
   logger.info('Fix plan set', {
     sessionId,
     fixCount: fixPlan.length,
-    batches: fixPlan.length > 0 ? Math.max(...fixPlan.map(f => f.batchNumber)) : 0,
+    batches: fixPlan.length > 0 ? Math.max(...fixPlan.map((f) => f.batchNumber)) : 0,
   });
   return session;
 }
@@ -174,7 +175,7 @@ export function recordFix(
   const session = sessions.get(sessionId);
   if (!session || !session.fixPlan) return undefined;
 
-  const fixItem = session.fixPlan.find(f => f.id === fixId);
+  const fixItem = session.fixPlan.find((f) => f.id === fixId);
   if (!fixItem) return undefined;
 
   fixItem.status = result.status;
@@ -194,7 +195,7 @@ export function recordFix(
   }
 
   const allDone = session.fixPlan.every(
-    f => f.status === 'completed' || f.status === 'skipped' || f.status === 'failed',
+    (f) => f.status === 'completed' || f.status === 'skipped' || f.status === 'failed',
   );
   if (allDone) {
     session.status = 'fixes_complete';
@@ -204,7 +205,7 @@ export function recordFix(
     sessionId,
     fixId,
     status: result.status,
-    remaining: session.fixPlan.filter(f => f.status === 'pending').length,
+    remaining: session.fixPlan.filter((f) => f.status === 'pending').length,
   });
   return session;
 }
@@ -212,34 +213,33 @@ export function recordFix(
 /**
  * Get a summary of fix progress for a session.
  */
-export function getFixProgress(sessionId: string): {
-  auditStatus: SessionStatus;
-  auditPhasesCompleted: number;
-  auditPhasesTotal: number;
-  fixPlanGenerated: boolean;
-  totalFixes: number;
-  completedFixes: number;
-  skippedFixes: number;
-  failedFixes: number;
-  pendingFixes: number;
-  currentFix: FixItem | null;
-  currentBatch: number;
-  totalBatches: number;
-} | undefined {
+export function getFixProgress(sessionId: string):
+  | {
+      auditStatus: SessionStatus;
+      auditPhasesCompleted: number;
+      auditPhasesTotal: number;
+      fixPlanGenerated: boolean;
+      totalFixes: number;
+      completedFixes: number;
+      skippedFixes: number;
+      failedFixes: number;
+      pendingFixes: number;
+      currentFix: FixItem | null;
+      currentBatch: number;
+      totalBatches: number;
+    }
+  | undefined {
   const session = sessions.get(sessionId);
   if (!session) return undefined;
 
   const fixPlan = session.fixPlan ?? [];
-  const pending = fixPlan.filter(f => f.status === 'pending').length;
-  const completed = fixPlan.filter(f => f.status === 'completed').length;
-  const skipped = fixPlan.filter(f => f.status === 'skipped').length;
-  const failed = fixPlan.filter(f => f.status === 'failed').length;
-  const currentFix = session.currentFixIndex < fixPlan.length
-    ? fixPlan[session.currentFixIndex]
-    : null;
-  const totalBatches = fixPlan.length > 0
-    ? Math.max(...fixPlan.map(f => f.batchNumber))
-    : 0;
+  const pending = fixPlan.filter((f) => f.status === 'pending').length;
+  const completed = fixPlan.filter((f) => f.status === 'completed').length;
+  const skipped = fixPlan.filter((f) => f.status === 'skipped').length;
+  const failed = fixPlan.filter((f) => f.status === 'failed').length;
+  const currentFix =
+    session.currentFixIndex < fixPlan.length ? fixPlan[session.currentFixIndex] : null;
+  const totalBatches = fixPlan.length > 0 ? Math.max(...fixPlan.map((f) => f.batchNumber)) : 0;
   const currentBatch = currentFix?.batchNumber ?? totalBatches;
 
   return {

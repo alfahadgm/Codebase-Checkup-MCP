@@ -13,7 +13,8 @@ describe('handleNextPhase', () => {
     const result = handleNextPhase({
       sessionId,
       completedPhaseId: 'P1',
-      findings: '# P1: Dead Code\n\n## Remediation Table\n| ID | Finding | Impact | Effort | Confidence | Cross-Refs |\n|---|---|---|---|---|---|\n| P1.1 | Test | Revenue Loss | Quick Fix | Confirmed | — |',
+      findings:
+        '# P1: Dead Code\n\n## Remediation Table\n| ID | Finding | Impact | Effort | Confidence | Cross-Refs |\n|---|---|---|---|---|---|\n| P1.1 | Test | Revenue Loss | Quick Fix | Confirmed | — |',
     });
 
     expect(result.content).toHaveLength(2);

@@ -73,7 +73,7 @@ Critical: [N] | High: [N] | Medium: [N]
 \`\`\`
 
 ### The 10 Phases
-${ALL_PHASES.map(p => `- **${p.id}:** ${p.name}`).join('\n')}
+${ALL_PHASES.map((p) => `- **${p.id}:** ${p.name}`).join('\n')}
 
 ### Audit Quality Rules
 - Be thorough: read actual source files, don't guess from filenames

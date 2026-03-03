@@ -2,9 +2,7 @@ import { z } from 'zod';
 import { getSession } from '../session/manager.js';
 
 export const getStatusSchema = z.object({
-  sessionId: z
-    .string()
-    .describe('The session ID to check status for.'),
+  sessionId: z.string().describe('The session ID to check status for.'),
 });
 
 export type GetStatusInput = z.infer<typeof getStatusSchema>;
@@ -23,11 +21,12 @@ export function handleGetStatus(input: GetStatusInput) {
     };
   }
 
-  const completedIds = session.completedPhases.map(p => p.phaseId);
-  const currentPhase = session.currentPhaseIndex < session.phases.length
-    ? session.phases[session.currentPhaseIndex]
-    : null;
-  const remainingPhases = session.phases.slice(session.currentPhaseIndex).map(p => p.id);
+  const completedIds = session.completedPhases.map((p) => p.phaseId);
+  const currentPhase =
+    session.currentPhaseIndex < session.phases.length
+      ? session.phases[session.currentPhaseIndex]
+      : null;
+  const remainingPhases = session.phases.slice(session.currentPhaseIndex).map((p) => p.id);
 
   const result = {
     sessionId: session.id,
@@ -39,17 +38,20 @@ export function handleGetStatus(input: GetStatusInput) {
       percent: Math.round((session.completedPhases.length / session.phases.length) * 100 * 10) / 10,
       completed: completedIds,
     },
-    currentPhase: currentPhase ? {
-      id: currentPhase.id,
-      name: currentPhase.name,
-      description: currentPhase.description,
-    } : null,
+    currentPhase: currentPhase
+      ? {
+          id: currentPhase.id,
+          name: currentPhase.name,
+          description: currentPhase.description,
+        }
+      : null,
     remainingPhases,
-    nextStep: session.status === 'complete'
-      ? `Audit complete. Call checkup_get_report with sessionId="${session.id}" to get the final report.`
-      : currentPhase
-        ? `Immediately analyze the codebase for ${currentPhase.id}: ${currentPhase.name}, then call checkup_next_phase with sessionId="${session.id}", completedPhaseId="${currentPhase.id}", and your findings.`
-        : 'No phases remaining.',
+    nextStep:
+      session.status === 'complete'
+        ? `Audit complete. Call checkup_get_report with sessionId="${session.id}" to get the final report.`
+        : currentPhase
+          ? `Immediately analyze the codebase for ${currentPhase.id}: ${currentPhase.name}, then call checkup_next_phase with sessionId="${session.id}", completedPhaseId="${currentPhase.id}", and your findings.`
+          : 'No phases remaining.',
   };
 
   return {

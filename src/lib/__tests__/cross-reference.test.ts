@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { extractCrossRefSummary, countFindings, extractSeverityCounts, parseRemediationTable, extractEffortCounts } from '../cross-reference.js';
+import {
+  extractCrossRefSummary,
+  countFindings,
+  extractSeverityCounts,
+  parseRemediationTable,
+  extractEffortCounts,
+} from '../cross-reference.js';
 
 const SAMPLE_FINDINGS = `# P1: Dead Code Detection
 
@@ -113,7 +119,7 @@ describe('extractSeverityCounts', () => {
     const counts = extractSeverityCounts(SAMPLE_FINDINGS);
     // P1.1: Revenue Loss → high, P1.2: Data Loss → critical, P1.3: Security Breach → critical
     expect(counts.critical).toBe(2); // data loss + security breach
-    expect(counts.high).toBe(1);     // revenue loss
+    expect(counts.high).toBe(1); // revenue loss
     expect(counts.medium).toBe(0);
   });
 
@@ -148,8 +154,8 @@ describe('parseRemediationTable', () => {
 describe('extractEffortCounts', () => {
   it('counts effort levels from table', () => {
     const counts = extractEffortCounts(SAMPLE_FINDINGS);
-    expect(counts.quickFix).toBe(2);     // P1.1 + P1.2
-    expect(counts.moderate).toBe(1);     // P1.3
+    expect(counts.quickFix).toBe(2); // P1.1 + P1.2
+    expect(counts.moderate).toBe(1); // P1.3
     expect(counts.significantRefactor).toBe(0);
   });
 

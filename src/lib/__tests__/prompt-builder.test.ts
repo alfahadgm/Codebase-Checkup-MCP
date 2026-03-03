@@ -38,10 +38,7 @@ describe('buildPhasePrompt', () => {
   });
 
   it('joins multiple prior findings with separators', () => {
-    const completed = [
-      makeResult('P1', 'P1 findings'),
-      makeResult('P2', 'P2 findings'),
-    ];
+    const completed = [makeResult('P1', 'P1 findings'), makeResult('P2', 'P2 findings')];
     const prompt = buildPhasePrompt(makePhase('P3'), completed);
     expect(prompt).toContain('P1 Summary');
     expect(prompt).toContain('P2 Summary');

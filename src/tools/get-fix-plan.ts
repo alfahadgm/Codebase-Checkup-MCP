@@ -4,9 +4,7 @@ import { FixItem } from '../session/types.js';
 import { extractFixPlan, getFixPlanSummary, formatFixPlanForPrompt } from '../lib/fix-planner.js';
 
 export const getFixPlanSchema = z.object({
-  sessionId: z
-    .string()
-    .describe('The session ID from checkup_start_audit.'),
+  sessionId: z.string().describe('The session ID from checkup_start_audit.'),
   maxFixes: z
     .number()
     .optional()
@@ -25,10 +23,12 @@ export function handleGetFixPlan(input: GetFixPlanInput) {
   const session = getSession(input.sessionId);
   if (!session) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Session "${input.sessionId}" not found. It may have expired (sessions last 2 hours).`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Session "${input.sessionId}" not found. It may have expired (sessions last 2 hours).`,
+        },
+      ],
       isError: true,
     };
   }
@@ -40,10 +40,12 @@ export function handleGetFixPlan(input: GetFixPlanInput) {
 
   if (session.status === 'in_progress') {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Audit is still in progress (${session.completedPhases.length}/${session.phases.length} phases complete). Complete the audit first.`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Audit is still in progress (${session.completedPhases.length}/${session.phases.length} phases complete). Complete the audit first.`,
+        },
+      ],
       isError: true,
     };
   }
@@ -52,9 +54,9 @@ export function handleGetFixPlan(input: GetFixPlanInput) {
 
   // Apply priority filter
   if (input.priorityFilter === 'critical') {
-    fixItems = fixItems.filter(f => f.priority === 'critical');
+    fixItems = fixItems.filter((f) => f.priority === 'critical');
   } else if (input.priorityFilter === 'critical_and_high') {
-    fixItems = fixItems.filter(f => f.priority === 'critical' || f.priority === 'high');
+    fixItems = fixItems.filter((f) => f.priority === 'critical' || f.priority === 'high');
   }
 
   // Apply max limit
@@ -72,10 +74,12 @@ export function handleGetFixPlan(input: GetFixPlanInput) {
   const updated = setFixPlan(input.sessionId, fixItems);
   if (!updated) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Could not set fix plan. Session status is "${session.status}" — fix plan requires a completed audit.`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Could not set fix plan. Session status is "${session.status}" — fix plan requires a completed audit.`,
+        },
+      ],
       isError: true,
     };
   }
@@ -85,21 +89,26 @@ export function handleGetFixPlan(input: GetFixPlanInput) {
 
 function buildResponse(sessionId: string, fixItems: FixItem[], alreadyGenerated: boolean) {
   const summary = getFixPlanSummary(fixItems);
-  const nextStep = fixItems.length > 0
-    ? `Apply fixes in order, starting with ${fixItems[0].id}: ${fixItems[0].title}. After each fix, call checkup_record_fix.`
-    : 'No actionable fixes found. The codebase looks clean based on audit findings.';
+  const nextStep =
+    fixItems.length > 0
+      ? `Apply fixes in order, starting with ${fixItems[0].id}: ${fixItems[0].title}. After each fix, call checkup_record_fix.`
+      : 'No actionable fixes found. The codebase looks clean based on audit findings.';
 
   return {
     content: [
       {
         type: 'text' as const,
-        text: JSON.stringify({
-          sessionId,
-          alreadyGenerated,
-          totalFixes: fixItems.length,
-          summary,
-          nextStep,
-        }, null, 2),
+        text: JSON.stringify(
+          {
+            sessionId,
+            alreadyGenerated,
+            totalFixes: fixItems.length,
+            summary,
+            nextStep,
+          },
+          null,
+          2,
+        ),
       },
       {
         type: 'text' as const,

@@ -7,10 +7,7 @@ import { extractCrossRefSummary } from './cross-reference.js';
  * - The phase-specific audit prompt
  * - Cross-reference context from all completed prior phases
  */
-export function buildPhasePrompt(
-  phase: PhaseConfig,
-  completedPhases: PhaseResult[],
-): string {
+export function buildPhasePrompt(phase: PhaseConfig, completedPhases: PhaseResult[]): string {
   const promptFn = PHASE_PROMPTS[phase.id];
   if (!promptFn) {
     return `Unknown phase: ${phase.id}. Available phases: ${Object.keys(PHASE_PROMPTS).join(', ')}`;
@@ -19,7 +16,7 @@ export function buildPhasePrompt(
   let priorFindings: string | undefined;
 
   if (completedPhases.length > 0) {
-    const summaries = completedPhases.map(p => p.findingSummary);
+    const summaries = completedPhases.map((p) => p.findingSummary);
     priorFindings = summaries.join('\n\n---\n\n');
   }
 

@@ -47,14 +47,14 @@ The test suite covers most of the core functionality but has some gaps in edge c
   it('warns when findings are too short', () => {
     const findings = 'Brief.';
     const warnings = validateFindings('P3', findings);
-    const codes = warnings.map(w => w.code);
+    const codes = warnings.map((w) => w.code);
     expect(codes).toContain('FINDINGS_TOO_SHORT');
   });
 
   it('does not warn about short findings that say "no findings"', () => {
     const findings = 'No findings for this phase.';
     const warnings = validateFindings('P7', findings);
-    const codes = warnings.map(w => w.code);
+    const codes = warnings.map((w) => w.code);
     expect(codes).not.toContain('FINDINGS_TOO_SHORT');
   });
 

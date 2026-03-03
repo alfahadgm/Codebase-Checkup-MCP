@@ -119,8 +119,7 @@ function assignBatches(items: FixItem[]): void {
   let currentEffortGroup: 'quick' | 'other' | null = null;
 
   for (const item of items) {
-    const effortGroup: 'quick' | 'other' =
-      item.effort === 'quick_fix' ? 'quick' : 'other';
+    const effortGroup: 'quick' | 'other' = item.effort === 'quick_fix' ? 'quick' : 'other';
 
     if (item.priority !== currentPriority || effortGroup !== currentEffortGroup) {
       if (currentPriority !== null) batchNum++;
@@ -135,18 +134,16 @@ function assignBatches(items: FixItem[]): void {
  * Get a compact summary of the fix plan for prompt injection.
  */
 export function getFixPlanSummary(fixItems: FixItem[]): string {
-  const byCritical = fixItems.filter(f => f.priority === 'critical');
-  const byHigh = fixItems.filter(f => f.priority === 'high');
-  const byMedium = fixItems.filter(f => f.priority === 'medium');
-  const totalBatches = fixItems.length > 0
-    ? Math.max(...fixItems.map(f => f.batchNumber))
-    : 0;
+  const byCritical = fixItems.filter((f) => f.priority === 'critical');
+  const byHigh = fixItems.filter((f) => f.priority === 'high');
+  const byMedium = fixItems.filter((f) => f.priority === 'medium');
+  const totalBatches = fixItems.length > 0 ? Math.max(...fixItems.map((f) => f.batchNumber)) : 0;
 
   return [
     `Fix Plan: ${fixItems.length} total fixes in ${totalBatches} batches`,
-    `- Critical: ${byCritical.length} (${byCritical.filter(f => f.effort === 'quick_fix').length} quick fixes)`,
-    `- High: ${byHigh.length} (${byHigh.filter(f => f.effort === 'quick_fix').length} quick fixes)`,
-    `- Medium: ${byMedium.length} (${byMedium.filter(f => f.effort === 'quick_fix').length} quick fixes)`,
+    `- Critical: ${byCritical.length} (${byCritical.filter((f) => f.effort === 'quick_fix').length} quick fixes)`,
+    `- High: ${byHigh.length} (${byHigh.filter((f) => f.effort === 'quick_fix').length} quick fixes)`,
+    `- Medium: ${byMedium.length} (${byMedium.filter((f) => f.effort === 'quick_fix').length} quick fixes)`,
   ].join('\n');
 }
 
@@ -158,19 +155,20 @@ export function formatFixPlanForPrompt(fixItems: FixItem[]): string {
     return '\n---\n\nNo fixes to apply.';
   }
 
-  const totalBatches = Math.max(...fixItems.map(f => f.batchNumber));
+  const totalBatches = Math.max(...fixItems.map((f) => f.batchNumber));
   const batches: string[] = [];
 
   for (let b = 1; b <= totalBatches; b++) {
-    const batchItems = fixItems.filter(f => f.batchNumber === b);
+    const batchItems = fixItems.filter((f) => f.batchNumber === b);
     if (batchItems.length === 0) continue;
 
     const priority = batchItems[0].priority;
     const effort = batchItems[0].effort;
     const batchLabel = `Batch ${b}: ${priority.toUpperCase()} / ${effort.replace(/_/g, ' ')}`;
 
-    const items = batchItems.map(f =>
-      `  - **${f.id}** (${f.findingId}): ${f.title}\n    Files: ${f.filePaths.length > 0 ? f.filePaths.join(', ') : '(determine from finding)'}\n    Effort: ${f.effort.replace(/_/g, ' ')} | Confidence: ${f.confidence}${f.crossRefs.length > 0 ? `\n    Cross-refs: ${f.crossRefs.join(', ')}` : ''}`,
+    const items = batchItems.map(
+      (f) =>
+        `  - **${f.id}** (${f.findingId}): ${f.title}\n    Files: ${f.filePaths.length > 0 ? f.filePaths.join(', ') : '(determine from finding)'}\n    Effort: ${f.effort.replace(/_/g, ' ')} | Confidence: ${f.confidence}${f.crossRefs.length > 0 ? `\n    Cross-refs: ${f.crossRefs.join(', ')}` : ''}`,
     );
 
     batches.push(`### ${batchLabel}\n${items.join('\n')}`);

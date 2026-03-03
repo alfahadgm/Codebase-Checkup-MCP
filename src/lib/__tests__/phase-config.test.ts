@@ -7,7 +7,7 @@ describe('ALL_PHASES', () => {
   });
 
   it('phases are ordered 1-10', () => {
-    const orders = ALL_PHASES.map(p => p.order);
+    const orders = ALL_PHASES.map((p) => p.order);
     expect(orders).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
@@ -53,7 +53,7 @@ describe('getPhasesInRange', () => {
   it('returns phases from startFrom onwards', () => {
     const phases = getPhasesInRange('P8');
     expect(phases).toHaveLength(3);
-    expect(phases.map(p => p.id)).toEqual(['P8', 'P9', 'P10']);
+    expect(phases.map((p) => p.id)).toEqual(['P8', 'P9', 'P10']);
   });
 
   it('returns empty for invalid startFrom', () => {
@@ -74,7 +74,7 @@ describe('filterPhases', () => {
   it('filters to specific phases', () => {
     const { phases } = filterPhases(['P1', 'P3', 'P9']);
     expect(phases).toHaveLength(3);
-    expect(phases.map(p => p.id)).toEqual(['P1', 'P3', 'P9']);
+    expect(phases.map((p) => p.id)).toEqual(['P1', 'P3', 'P9']);
   });
 
   it('is case-insensitive', () => {

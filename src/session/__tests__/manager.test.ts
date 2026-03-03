@@ -47,7 +47,8 @@ describe('getSession', () => {
 describe('completePhase', () => {
   it('completes the current phase and advances index', () => {
     const session = createSession(makePhases(['P1', 'P2']));
-    const findings = '# P1: Test\n## Remediation Table\n| ID | Finding |\n|---|---|\n| P1.1 | test |';
+    const findings =
+      '# P1: Test\n## Remediation Table\n| ID | Finding |\n|---|---|\n| P1.1 | test |';
 
     const updated = completePhase(session.id, 'P1', findings);
     expect(updated).toBeDefined();

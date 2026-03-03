@@ -51,10 +51,7 @@ No test coverage.
 `;
 
 describe('buildFinalReport - markdown', () => {
-  const phases: PhaseResult[] = [
-    makeFinding('P1', SAMPLE_P1),
-    makeFinding('P2', SAMPLE_P2),
-  ];
+  const phases: PhaseResult[] = [makeFinding('P1', SAMPLE_P1), makeFinding('P2', SAMPLE_P2)];
 
   it('returns report, statistics, and roadmap', () => {
     const result = buildFinalReport(phases, 'markdown');
@@ -88,9 +85,7 @@ describe('buildFinalReport - markdown', () => {
 });
 
 describe('buildFinalReport - json', () => {
-  const phases: PhaseResult[] = [
-    makeFinding('P1', SAMPLE_P1),
-  ];
+  const phases: PhaseResult[] = [makeFinding('P1', SAMPLE_P1)];
 
   it('returns valid JSON', () => {
     const result = buildFinalReport(phases, 'json');
@@ -113,9 +108,7 @@ describe('buildFinalReport - json', () => {
 
 describe('buildFinalReport - edge cases', () => {
   it('handles empty findings gracefully', () => {
-    const phases: PhaseResult[] = [
-      makeFinding('P1', 'No findings for this phase.'),
-    ];
+    const phases: PhaseResult[] = [makeFinding('P1', 'No findings for this phase.')];
     const result = buildFinalReport(phases, 'markdown');
     expect(result.statistics.totalFindings).toBe(0);
   });

@@ -21,13 +21,16 @@ export function parseRemediationTable(findings: string): ParsedFinding[] {
   const tableEnd = tableSection.indexOf('\n## ', 3);
   const table = tableEnd !== -1 ? tableSection.slice(0, tableEnd) : tableSection;
 
-  const rows = table.split('\n').filter(l =>
-    l.startsWith('|') && !l.includes('---') && !l.toLowerCase().includes('| id')
-  );
+  const rows = table
+    .split('\n')
+    .filter((l) => l.startsWith('|') && !l.includes('---') && !l.toLowerCase().includes('| id'));
 
   const parsed: ParsedFinding[] = [];
   for (const row of rows) {
-    const cols = row.split('|').map(c => c.trim()).filter(c => c.length > 0);
+    const cols = row
+      .split('|')
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0);
     if (cols.length >= 5) {
       parsed.push({
         id: cols[0],
@@ -53,7 +56,7 @@ export function extractCrossRefSummary(phaseId: string, findings: string): strin
   const sections: string[] = [];
 
   // Extract the title
-  const titleLine = lines.find(l => l.startsWith('# '));
+  const titleLine = lines.find((l) => l.startsWith('# '));
   if (titleLine) {
     sections.push(titleLine);
   }
@@ -87,7 +90,7 @@ export function extractCrossRefSummary(phaseId: string, findings: string): strin
   if (sections.length <= 1) {
     logger.debug('Cross-ref: no table or headers found, using fallback', { phaseId });
     // Last-resort: pull any lines that look like finding headers
-    const anyHeaders = lines.filter(l => /^#{1,3}\s+/.test(l));
+    const anyHeaders = lines.filter((l) => /^#{1,3}\s+/.test(l));
     if (anyHeaders.length > 1) {
       return `### ${phaseId} Summary\n${anyHeaders.join('\n')}`;
     }
@@ -122,7 +125,11 @@ export function extractSeverityCounts(findings: string): {
 
   for (const row of parsed) {
     const impact = row.impact.toLowerCase();
-    if (impact.includes('data loss') || impact.includes('security breach') || impact.includes('compliance')) {
+    if (
+      impact.includes('data loss') ||
+      impact.includes('security breach') ||
+      impact.includes('compliance')
+    ) {
       counts.critical++;
     } else if (impact.includes('revenue loss') || impact.includes('user-blocking')) {
       counts.high++;

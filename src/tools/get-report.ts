@@ -3,9 +3,7 @@ import { getSession } from '../session/manager.js';
 import { buildFinalReport } from '../lib/report-builder.js';
 
 export const getReportSchema = z.object({
-  sessionId: z
-    .string()
-    .describe('The session ID from checkup_start_audit.'),
+  sessionId: z.string().describe('The session ID from checkup_start_audit.'),
   format: z
     .enum(['markdown', 'json'])
     .optional()

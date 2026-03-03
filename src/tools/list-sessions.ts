@@ -24,12 +24,13 @@ export function handleListSessions() {
         type: 'text' as const,
         text: JSON.stringify(
           {
-            activeSessions: sessions.map(s => ({
+            activeSessions: sessions.map((s) => ({
               ...s,
               currentPhase: s.currentPhaseIndex + 1,
-              resumeHint: s.status === 'in_progress'
-                ? `Call checkup_start_audit with resumeSessionId="${s.id}" to resume.`
-                : undefined,
+              resumeHint:
+                s.status === 'in_progress'
+                  ? `Call checkup_start_audit with resumeSessionId="${s.id}" to resume.`
+                  : undefined,
             })),
           },
           null,

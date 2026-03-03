@@ -7,8 +7,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   error: 3,
 };
 
-const currentLevel: LogLevel =
-  (process.env.CHECKUP_LOG_LEVEL as LogLevel) ?? 'warn';
+const currentLevel: LogLevel = (process.env.CHECKUP_LOG_LEVEL as LogLevel) ?? 'warn';
 
 function log(level: LogLevel, message: string, data?: Record<string, unknown>): void {
   if (LOG_LEVEL_PRIORITY[level] < LOG_LEVEL_PRIORITY[currentLevel]) return;

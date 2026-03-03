@@ -59,7 +59,7 @@ You MUST run this audit to completion without stopping to ask the user for confi
 3. **When all phases are complete** (\`isComplete: true\`) — Immediately call \`checkup_get_report\` to get the final aggregated report
 
 ## The 10 Phases
-${ALL_PHASES.map(p => `- **${p.id}:** ${p.name}`).join('\n')}
+${ALL_PHASES.map((p) => `- **${p.id}:** ${p.name}`).join('\n')}
 
 ## Context Management
 - Each phase's findings should be 500-2000 words — focus on Critical/High findings, not exhaustive catalogs

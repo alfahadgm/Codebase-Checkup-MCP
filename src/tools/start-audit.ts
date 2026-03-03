@@ -8,7 +8,9 @@ export const startAuditSchema = z.object({
   phases: z
     .array(z.string())
     .optional()
-    .describe('Optional list of phase IDs to run (e.g., ["P1", "P3", "P9"]). Defaults to all 10 phases.'),
+    .describe(
+      'Optional list of phase IDs to run (e.g., ["P1", "P3", "P9"]). Defaults to all 10 phases.',
+    ),
   startFrom: z
     .string()
     .optional()
@@ -16,7 +18,9 @@ export const startAuditSchema = z.object({
   resumeSessionId: z
     .string()
     .optional()
-    .describe('Optional session ID to resume a previously started audit. Returns the current phase prompt.'),
+    .describe(
+      'Optional session ID to resume a previously started audit. Returns the current phase prompt.',
+    ),
 });
 
 export type StartAuditInput = z.infer<typeof startAuditSchema>;
@@ -42,12 +46,16 @@ export function handleStartAudit(input: StartAuditInput) {
         content: [
           {
             type: 'text' as const,
-            text: JSON.stringify({
-              sessionId: session.id,
-              isComplete: true,
-              progressSummary: `Audit already complete. ${session.completedPhases.length} phases done.`,
-              nextStep: `Call checkup_get_report with sessionId="${session.id}" to get the final report.`,
-            }, null, 2),
+            text: JSON.stringify(
+              {
+                sessionId: session.id,
+                isComplete: true,
+                progressSummary: `Audit already complete. ${session.completedPhases.length} phases done.`,
+                nextStep: `Call checkup_get_report with sessionId="${session.id}" to get the final report.`,
+              },
+              null,
+              2,
+            ),
           },
         ],
       };
@@ -56,30 +64,36 @@ export function handleStartAudit(input: StartAuditInput) {
     const currentPhase = session.phases[session.currentPhaseIndex];
     const prompt = buildPhasePrompt(currentPhase, session.completedPhases);
     const outputFormat = findingFormat(currentPhase.id, currentPhase.name);
-    const completedIds = session.completedPhases.map(p => p.phaseId);
+    const completedIds = session.completedPhases.map((p) => p.phaseId);
 
     return {
       content: [
         {
           type: 'text' as const,
-          text: JSON.stringify({
-            sessionId: session.id,
-            resumed: true,
-            totalPhases: session.phases.length,
-            currentPhase: {
-              id: currentPhase.id,
-              name: currentPhase.name,
-              description: currentPhase.description,
-              number: session.currentPhaseIndex + 1,
+          text: JSON.stringify(
+            {
+              sessionId: session.id,
+              resumed: true,
+              totalPhases: session.phases.length,
+              currentPhase: {
+                id: currentPhase.id,
+                name: currentPhase.name,
+                description: currentPhase.description,
+                number: session.currentPhaseIndex + 1,
+              },
+              progress: {
+                current: session.currentPhaseIndex + 1,
+                total: session.phases.length,
+                percent:
+                  Math.round((session.completedPhases.length / session.phases.length) * 100 * 10) /
+                  10,
+                completed: completedIds,
+              },
+              nextStep: `Immediately analyze the codebase following the prompt below, then call checkup_next_phase with sessionId="${session.id}", completedPhaseId="${currentPhase.id}", and your findings.`,
             },
-            progress: {
-              current: session.currentPhaseIndex + 1,
-              total: session.phases.length,
-              percent: Math.round((session.completedPhases.length / session.phases.length) * 100 * 10) / 10,
-              completed: completedIds,
-            },
-            nextStep: `Immediately analyze the codebase following the prompt below, then call checkup_next_phase with sessionId="${session.id}", completedPhaseId="${currentPhase.id}", and your findings.`,
-          }, null, 2),
+            null,
+            2,
+          ),
         },
         {
           type: 'text' as const,
@@ -107,7 +121,7 @@ export function handleStartAudit(input: StartAuditInput) {
       content: [
         {
           type: 'text' as const,
-          text: `Error: No valid phases found. Available phases: ${ALL_PHASES.map(p => p.id).join(', ')}`,
+          text: `Error: No valid phases found. Available phases: ${ALL_PHASES.map((p) => p.id).join(', ')}`,
         },
       ],
       isError: true,
@@ -134,7 +148,9 @@ export function handleStartAudit(input: StartAuditInput) {
       percent: 0,
       completed: [] as string[],
     },
-    ...(invalidIds.length > 0 ? { warnings: [`Unrecognized phase IDs ignored: ${invalidIds.join(', ')}`] } : {}),
+    ...(invalidIds.length > 0
+      ? { warnings: [`Unrecognized phase IDs ignored: ${invalidIds.join(', ')}`] }
+      : {}),
     nextStep: `Immediately analyze the codebase following the prompt below, then call checkup_next_phase with sessionId="${session.id}", completedPhaseId="${currentPhase.id}", and your findings.`,
   };
 

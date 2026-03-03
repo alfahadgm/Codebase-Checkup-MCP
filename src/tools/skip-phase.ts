@@ -4,12 +4,8 @@ import { buildPhasePrompt } from '../lib/prompt-builder.js';
 import { findingFormat } from '../prompts/templates/finding-format.js';
 
 export const skipPhaseSchema = z.object({
-  sessionId: z
-    .string()
-    .describe('The session ID returned by checkup_start_audit.'),
-  phaseId: z
-    .string()
-    .describe('The phase ID to skip (e.g., "P7").'),
+  sessionId: z.string().describe('The session ID returned by checkup_start_audit.'),
+  phaseId: z.string().describe('The phase ID to skip (e.g., "P7").'),
   reason: z
     .string()
     .max(10_000, 'Reason exceeds 10KB limit.')
@@ -55,19 +51,23 @@ export function handleSkipPhase(input: SkipPhaseInput) {
       content: [
         {
           type: 'text' as const,
-          text: JSON.stringify({
-            isComplete: true,
-            skipped: input.phaseId,
-            reason: input.reason,
-            progressSummary,
-            progress: {
-              current: totalCount,
-              total: totalCount,
-              percent: 100,
-              completed: updated.completedPhases.map(p => p.phaseId),
+          text: JSON.stringify(
+            {
+              isComplete: true,
+              skipped: input.phaseId,
+              reason: input.reason,
+              progressSummary,
+              progress: {
+                current: totalCount,
+                total: totalCount,
+                percent: 100,
+                completed: updated.completedPhases.map((p) => p.phaseId),
+              },
+              nextStep: `All phases complete! Immediately call checkup_get_report with sessionId="${updated.id}" to get the final aggregated report.`,
             },
-            nextStep: `All phases complete! Immediately call checkup_get_report with sessionId="${updated.id}" to get the final aggregated report.`,
-          }, null, 2),
+            null,
+            2,
+          ),
         },
       ],
     };
@@ -76,31 +76,35 @@ export function handleSkipPhase(input: SkipPhaseInput) {
   const nextPhase = updated.phases[updated.currentPhaseIndex];
   const prompt = buildPhasePrompt(nextPhase, updated.completedPhases);
   const outputFmt = findingFormat(nextPhase.id, nextPhase.name);
-  const completedIds = updated.completedPhases.map(p => p.phaseId);
+  const completedIds = updated.completedPhases.map((p) => p.phaseId);
 
   return {
     content: [
       {
         type: 'text' as const,
-        text: JSON.stringify({
-          isComplete: false,
-          skipped: input.phaseId,
-          reason: input.reason,
-          currentPhase: {
-            id: nextPhase.id,
-            name: nextPhase.name,
-            description: nextPhase.description,
-            number: updated.currentPhaseIndex + 1,
+        text: JSON.stringify(
+          {
+            isComplete: false,
+            skipped: input.phaseId,
+            reason: input.reason,
+            currentPhase: {
+              id: nextPhase.id,
+              name: nextPhase.name,
+              description: nextPhase.description,
+              number: updated.currentPhaseIndex + 1,
+            },
+            progress: {
+              current: updated.currentPhaseIndex + 1,
+              total: totalCount,
+              percent: Math.round((completedCount / totalCount) * 100 * 10) / 10,
+              completed: completedIds,
+            },
+            progressSummary,
+            nextStep: `Immediately analyze the codebase following the prompt below, then call checkup_next_phase with sessionId="${updated.id}", completedPhaseId="${nextPhase.id}", and your findings.`,
           },
-          progress: {
-            current: updated.currentPhaseIndex + 1,
-            total: totalCount,
-            percent: Math.round((completedCount / totalCount) * 100 * 10) / 10,
-            completed: completedIds,
-          },
-          progressSummary,
-          nextStep: `Immediately analyze the codebase following the prompt below, then call checkup_next_phase with sessionId="${updated.id}", completedPhaseId="${nextPhase.id}", and your findings.`,
-        }, null, 2),
+          null,
+          2,
+        ),
       },
       {
         type: 'text' as const,

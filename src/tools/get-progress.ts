@@ -3,14 +3,15 @@ import { getSession, getFixProgress } from '../session/manager.js';
 import { SessionStatus } from '../session/types.js';
 
 export const getProgressSchema = z.object({
-  sessionId: z
-    .string()
-    .describe('The session ID to check progress for.'),
+  sessionId: z.string().describe('The session ID to check progress for.'),
 });
 
 export type GetProgressInput = z.infer<typeof getProgressSchema>;
 
-function describeStatus(status: SessionStatus, progress: ReturnType<typeof getFixProgress> & object): {
+function describeStatus(
+  status: SessionStatus,
+  progress: ReturnType<typeof getFixProgress> & object,
+): {
   statusDescription: string;
   nextStep: string;
 } {
@@ -35,7 +36,8 @@ function describeStatus(status: SessionStatus, progress: ReturnType<typeof getFi
     case 'fixes_complete':
       return {
         statusDescription: `All fixes processed: ${progress.completedFixes} completed, ${progress.skippedFixes} skipped, ${progress.failedFixes} failed out of ${progress.totalFixes} total.`,
-        nextStep: 'Fix execution complete. Run tests to verify all changes, then report final status to user.',
+        nextStep:
+          'Fix execution complete. Run tests to verify all changes, then report final status to user.',
       };
   }
 }
@@ -44,10 +46,12 @@ export function handleGetProgress(input: GetProgressInput) {
   const session = getSession(input.sessionId);
   if (!session) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Session "${input.sessionId}" not found. It may have expired (sessions last 2 hours).`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Session "${input.sessionId}" not found. It may have expired (sessions last 2 hours).`,
+        },
+      ],
       isError: true,
     };
   }
@@ -55,10 +59,12 @@ export function handleGetProgress(input: GetProgressInput) {
   const progress = getFixProgress(input.sessionId);
   if (!progress) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Could not retrieve progress for session "${input.sessionId}".`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Could not retrieve progress for session "${input.sessionId}".`,
+        },
+      ],
       isError: true,
     };
   }
@@ -66,14 +72,20 @@ export function handleGetProgress(input: GetProgressInput) {
   const { statusDescription, nextStep } = describeStatus(progress.auditStatus, progress);
 
   return {
-    content: [{
-      type: 'text' as const,
-      text: JSON.stringify({
-        sessionId: input.sessionId,
-        statusDescription,
-        ...progress,
-        nextStep,
-      }, null, 2),
-    }],
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(
+          {
+            sessionId: input.sessionId,
+            statusDescription,
+            ...progress,
+            nextStep,
+          },
+          null,
+          2,
+        ),
+      },
+    ],
   };
 }

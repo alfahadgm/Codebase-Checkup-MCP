@@ -2,12 +2,8 @@ import { z } from 'zod';
 import { getSession, recordFix } from '../session/manager.js';
 
 export const recordFixSchema = z.object({
-  sessionId: z
-    .string()
-    .describe('The session ID from checkup_start_audit.'),
-  fixId: z
-    .string()
-    .describe('The fix ID to record (e.g., "FIX-001").'),
+  sessionId: z.string().describe('The session ID from checkup_start_audit.'),
+  fixId: z.string().describe('The fix ID to record (e.g., "FIX-001").'),
   status: z
     .enum(['completed', 'skipped', 'failed'])
     .describe('Whether the fix was completed, skipped, or failed.'),
@@ -28,41 +24,49 @@ export function handleRecordFix(input: RecordFixInput) {
   const session = getSession(input.sessionId);
   if (!session) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Session "${input.sessionId}" not found. It may have expired (sessions last 2 hours).`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Session "${input.sessionId}" not found. It may have expired (sessions last 2 hours).`,
+        },
+      ],
       isError: true,
     };
   }
 
   if (!session.fixPlan) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: 'Error: No fix plan exists for this session. Call checkup_get_fix_plan first.',
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: 'Error: No fix plan exists for this session. Call checkup_get_fix_plan first.',
+        },
+      ],
       isError: true,
     };
   }
 
-  const fixItem = session.fixPlan.find(f => f.id === input.fixId);
+  const fixItem = session.fixPlan.find((f) => f.id === input.fixId);
   if (!fixItem) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Fix "${input.fixId}" not found. Valid IDs: ${session.fixPlan.map(f => f.id).join(', ')}`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Fix "${input.fixId}" not found. Valid IDs: ${session.fixPlan.map((f) => f.id).join(', ')}`,
+        },
+      ],
       isError: true,
     };
   }
 
   if (fixItem.status !== 'pending' && fixItem.status !== 'in_progress') {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Error: Fix "${input.fixId}" is already ${fixItem.status}. Cannot record again.`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error: Fix "${input.fixId}" is already ${fixItem.status}. Cannot record again.`,
+        },
+      ],
       isError: true,
     };
   }
@@ -77,19 +81,21 @@ export function handleRecordFix(input: RecordFixInput) {
 
   if (!updated) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: 'Error: Could not record fix. Session may have expired.',
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: 'Error: Could not record fix. Session may have expired.',
+        },
+      ],
       isError: true,
     };
   }
 
   const plan = updated.fixPlan!;
-  const pending = plan.filter(f => f.status === 'pending');
-  const completed = plan.filter(f => f.status === 'completed');
-  const skipped = plan.filter(f => f.status === 'skipped');
-  const failed = plan.filter(f => f.status === 'failed');
+  const pending = plan.filter((f) => f.status === 'pending');
+  const completed = plan.filter((f) => f.status === 'completed');
+  const skipped = plan.filter((f) => f.status === 'skipped');
+  const failed = plan.filter((f) => f.status === 'failed');
 
   const nextFix = pending.length > 0 ? pending[0] : null;
   const allDone = pending.length === 0;
@@ -97,7 +103,7 @@ export function handleRecordFix(input: RecordFixInput) {
   // Check if the current batch just completed
   const currentBatch = fixItem.batchNumber;
   const remainingInBatch = plan.filter(
-    f => f.batchNumber === currentBatch && f.status === 'pending',
+    (f) => f.batchNumber === currentBatch && f.status === 'pending',
   );
   const batchJustCompleted = remainingInBatch.length === 0;
 
@@ -129,9 +135,11 @@ export function handleRecordFix(input: RecordFixInput) {
     : `Next fix: ${nextFix!.id} (${nextFix!.findingId}): ${nextFix!.title}`;
 
   return {
-    content: [{
-      type: 'text' as const,
-      text: JSON.stringify(result, null, 2),
-    }],
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(result, null, 2),
+      },
+    ],
   };
 }

@@ -1,6 +1,11 @@
 import { PhaseResult } from '../session/types.js';
 import { ALL_PHASES } from './phase-config.js';
-import { countFindings, extractSeverityCounts, extractEffortCounts, parseRemediationTable } from './cross-reference.js';
+import {
+  countFindings,
+  extractSeverityCounts,
+  extractEffortCounts,
+  parseRemediationTable,
+} from './cross-reference.js';
 
 export interface AuditStatistics {
   totalFindings: number;
@@ -19,21 +24,25 @@ export function buildFinalReport(
   const statistics = computeStatistics(completedPhases);
 
   if (format === 'json') {
-    const report = JSON.stringify({
-      phases: completedPhases.map(p => ({
-        phaseId: p.phaseId,
-        findings: p.findings,
-        completedAt: p.completedAt.toISOString(),
-      })),
-      statistics,
-    }, null, 2);
+    const report = JSON.stringify(
+      {
+        phases: completedPhases.map((p) => ({
+          phaseId: p.phaseId,
+          findings: p.findings,
+          completedAt: p.completedAt.toISOString(),
+        })),
+        statistics,
+      },
+      null,
+      2,
+    );
 
     return { report, statistics, remediationRoadmap: '' };
   }
 
   // Markdown format
   const phaseReports = completedPhases
-    .map(p => {
+    .map((p) => {
       return `---\n\n${p.findings}`;
     })
     .join('\n\n');
@@ -70,7 +79,7 @@ function computeStatistics(completedPhases: PhaseResult[]): AuditStatistics {
     const count = countFindings(phase.phaseId, phase.findings);
     totalFindings += count;
 
-    const phaseConfig = ALL_PHASES.find(p => p.id === phase.phaseId);
+    const phaseConfig = ALL_PHASES.find((p) => p.id === phase.phaseId);
     byPhase.push({
       phaseId: phase.phaseId,
       phaseName: phaseConfig?.name ?? phase.phaseId,
@@ -92,9 +101,7 @@ function computeStatistics(completedPhases: PhaseResult[]): AuditStatistics {
 }
 
 function buildStatisticsTable(stats: AuditStatistics): string {
-  const rows = stats.byPhase.map(p =>
-    `| ${p.phaseId} | ${p.phaseName} | ${p.findingCount} |`
-  );
+  const rows = stats.byPhase.map((p) => `| ${p.phaseId} | ${p.phaseName} | ${p.findingCount} |`);
 
   return `| Phase | Name | Findings |
 |-------|------|----------|
@@ -109,10 +116,7 @@ interface RoadmapFinding {
   effort: string;
 }
 
-function buildRemediationRoadmap(
-  completedPhases: PhaseResult[],
-  stats: AuditStatistics,
-): string {
+function buildRemediationRoadmap(completedPhases: PhaseResult[], stats: AuditStatistics): string {
   // Collect all parsed findings from remediation tables
   const allFindings: RoadmapFinding[] = [];
   for (const phase of completedPhases) {
@@ -129,31 +133,45 @@ function buildRemediationRoadmap(
 
   // If we have structured findings, build an adaptive roadmap
   if (allFindings.length > 0) {
-    const critical = allFindings.filter(f => {
+    const critical = allFindings.filter((f) => {
       const impact = f.impact.toLowerCase();
-      return impact.includes('data loss') || impact.includes('security breach') || impact.includes('compliance');
+      return (
+        impact.includes('data loss') ||
+        impact.includes('security breach') ||
+        impact.includes('compliance')
+      );
     });
-    const high = allFindings.filter(f => {
+    const high = allFindings.filter((f) => {
       const impact = f.impact.toLowerCase();
       return impact.includes('revenue loss') || impact.includes('user-blocking');
     });
-    const medium = allFindings.filter(f => {
+    const medium = allFindings.filter((f) => {
       const impact = f.impact.toLowerCase();
-      return !impact.includes('data loss') && !impact.includes('security breach') &&
-        !impact.includes('compliance') && !impact.includes('revenue loss') && !impact.includes('user-blocking');
+      return (
+        !impact.includes('data loss') &&
+        !impact.includes('security breach') &&
+        !impact.includes('compliance') &&
+        !impact.includes('revenue loss') &&
+        !impact.includes('user-blocking')
+      );
     });
 
     const formatGroup = (items: RoadmapFinding[]): string => {
       if (items.length === 0) return '  _None_\n';
-      return items.map(f => `  - **${f.id}:** ${f.finding} — ${f.effort}`).join('\n') + '\n';
+      return items.map((f) => `  - **${f.id}:** ${f.finding} — ${f.effort}`).join('\n') + '\n';
     };
 
-    const quickWins = allFindings.filter(f => {
+    const quickWins = allFindings.filter((f) => {
       const effort = f.effort.toLowerCase();
       const impact = f.impact.toLowerCase();
-      return effort.includes('quick fix') &&
-        (impact.includes('data loss') || impact.includes('security breach') ||
-         impact.includes('compliance') || impact.includes('revenue loss') || impact.includes('user-blocking'));
+      return (
+        effort.includes('quick fix') &&
+        (impact.includes('data loss') ||
+          impact.includes('security breach') ||
+          impact.includes('compliance') ||
+          impact.includes('revenue loss') ||
+          impact.includes('user-blocking'))
+      );
     });
 
     let roadmap = `## Remediation Roadmap
@@ -171,7 +189,7 @@ ${formatGroup(medium)}
 
     if (quickWins.length > 0) {
       roadmap += `\n\n### Quick Wins (High Impact + Low Effort)
-${quickWins.map(f => `- **${f.id}:** ${f.finding}`).join('\n')}`;
+${quickWins.map((f) => `- **${f.id}:** ${f.finding}`).join('\n')}`;
     }
 
     roadmap += `\n\n**Recommended approach:** Start with Quick Wins above for maximum ROI, then work through Critical items.`;
