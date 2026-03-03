@@ -11,6 +11,7 @@ export { p09PerformancePrompt } from './p09-performance.js';
 export { p10SynthesisPrompt } from './p10-synthesis.js';
 export { globalRules } from './global-rules.js';
 export { findingFormat } from './finding-format.js';
+export { fixWorkflowPrompt } from './fix-workflow.js';
 
 import { PhasePromptArgs } from './p01-dead-code.js';
 import { p01DeadCodePrompt } from './p01-dead-code.js';

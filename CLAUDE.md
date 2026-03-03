@@ -35,10 +35,18 @@ CI runs: lint → format:check → build → test (see `.github/workflows/ci.yml
 5. Client calls `checkup_get_report` → aggregated report with adaptive remediation roadmap
 6. Optionally: `checkup_get_fix_plan` → `checkup_record_fix` loop → `checkup_get_progress`
 
+### Two-Conversation Workflow (Recommended)
+
+The `checkup-autonomous` prompt runs audit only and outputs a session ID. Fixes run in a separate conversation with clean context:
+
+1. **Conversation 1:** User runs `checkup-autonomous` → Plan + 10-phase audit → prints session ID + handoff instructions
+2. **User opens a new chat** (clean context window)
+3. **Conversation 2:** User runs `checkup-fix` prompt with the session ID → server returns stored findings → user picks severity filter → fixes applied in batches with user confirmation
+
 ### MCP Primitives
 
 - **9 Tools:** `checkup_start_audit`, `checkup_next_phase`, `checkup_skip_phase`, `checkup_get_report`, `checkup_get_status`, `checkup_list_sessions`, `checkup_get_fix_plan`, `checkup_record_fix`, `checkup_get_progress`
-- **12 Prompts:** `checkup-p1` through `checkup-p10` + `checkup-full-audit` + `checkup-autonomous`
+- **13 Prompts:** `checkup-p1` through `checkup-p10` + `checkup-full-audit` + `checkup-autonomous` + `checkup-fix`
 - **3 Resources:** `checkup://methodology`, `checkup://finding-format`, `checkup://phase-overview`
 
 ### Project Structure

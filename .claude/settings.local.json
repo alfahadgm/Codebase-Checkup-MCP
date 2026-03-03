@@ -14,7 +14,8 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(npx prettier:*)"
     ]
   }
 }

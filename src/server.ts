@@ -8,6 +8,7 @@ import { listSessionsSchema, handleListSessions } from './tools/list-sessions.js
 import { getFixPlanSchema, handleGetFixPlan } from './tools/get-fix-plan.js';
 import { recordFixSchema, handleRecordFix } from './tools/record-fix.js';
 import { getProgressSchema, handleGetProgress } from './tools/get-progress.js';
+import { compactContextSchema, handleCompactContext } from './tools/compact-context.js';
 import { registerPrompts } from './prompts/registry.js';
 import { registerResources } from './resources/registry.js';
 
@@ -80,6 +81,13 @@ export function createServer(): McpServer {
     'Get comprehensive progress summary including audit phases and fix execution status. Useful for re-orientation after context clearing.',
     getProgressSchema.shape,
     async (args) => handleGetProgress(args),
+  );
+
+  server.tool(
+    'checkup_compact_context',
+    'Get a minimal summary of all prior audit work. Use this when context is running low and you need to re-orient without loading full findings.',
+    compactContextSchema.shape,
+    async (args) => handleCompactContext(args),
   );
 
   // Register prompts and resources

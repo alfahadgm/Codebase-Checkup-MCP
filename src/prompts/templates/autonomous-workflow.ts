@@ -1,11 +1,11 @@
 import { ALL_PHASES } from '../../lib/phase-config.js';
 
 /**
- * Master orchestration prompt for the autonomous workflow:
- * Plan → Audit → Fix → Verify
+ * Master orchestration prompt for the autonomous audit workflow:
+ * Plan → Audit → Handoff (session ID for fix phase in a new conversation)
  */
 export function autonomousWorkflowPrompt(): string {
-  return `# Checkup Autonomous Workflow — Plan, Audit, Fix, Verify
+  return `# Checkup Autonomous Workflow — Plan, Audit, Handoff
 
 You MUST run this entire workflow to completion without stopping to ask the user for confirmation between steps. This is a fully autonomous process.
 
@@ -19,8 +19,7 @@ Throughout this workflow, print brief status updates so the user can follow alon
 Examples:
 - \`--- [PLAN] Scanning project structure ---\`
 - \`--- [AUDIT] Starting P3: Logic Gaps & Business Logic (3/10) ---\`
-- \`--- [FIX] Applying FIX-003: Missing null check in auth handler ---\`
-- \`--- [VERIFY] Running test suite ---\`
+- \`--- [AUDIT] Completed P3: 5 findings ---\`
 
 Keep status updates to ONE line. Save detailed output for the final report.
 
@@ -80,105 +79,66 @@ ${ALL_PHASES.map((p) => `- **${p.id}:** ${p.name}`).join('\n')}
 - Every finding must cite specific file paths, function names, and line numbers
 - Follow the finding format provided (including the Remediation Table)
 - Cross-reference related findings across phases using IDs (e.g., "See P1.3")
-- Keep each phase's findings to 500-2000 words — focus on Critical/High issues
+- Prioritize Critical/High findings but include all that are relevant
 
 ---
 
-## Phase 3: FIX
+## Phase 3: HANDOFF
 
-Print: \`--- [FIX] Generating fix plan ---\`
-
-1. Call \`checkup_get_fix_plan\` to get the prioritized fix plan
-2. Print:
-   \`\`\`
-   --- [FIX] Fix plan: [N] fixes in [N] batches ---
-   Critical: [N] | High: [N] | Medium: [N]
-   \`\`\`
-3. **For each fix in order:**
-   - Print: \`--- [FIX] Applying [FIX-ID]: [title] ---\`
-   - Read the relevant source files
-   - Apply the fix using your file-editing tools
-   - Call \`checkup_record_fix\` with the result
-   - If completed: Print \`--- [FIX] Applied [FIX-ID] ---\`
-   - If skipped: Print \`--- [FIX] Skipped [FIX-ID]: [reason] ---\`
-   - If failed: Print \`--- [FIX] Failed [FIX-ID]: [reason] ---\`
-4. **After each batch completes:**
-   - Print: \`--- [FIX] Batch [N] complete. Running tests ---\`
-   - Run the project's test suite and linter
-   - If tests fail: fix the issue and re-run
-   - If tests pass: Print \`--- [FIX] Tests pass. Starting batch [N+1] ---\`
-5. If running low on context, call \`checkup_get_progress\` for re-orientation
-
-### Fix Execution Rules
-- **Never skip a fix without explanation** — always record why
-- **Prioritize safety**: skip rather than risk breaking production code
-- **Run tests after every batch** — don't accumulate untested changes
-- **Atomic changes**: keep each fix self-contained
-- **Respect existing patterns**: match the codebase's style and conventions
-
-### What NOT to Fix
-- Fixes marked "Suspected" confidence — verify the issue first
-- Architecture refactors — unless Critical priority
-- Test file modifications to make tests pass — fix the source code instead
-- Public API contract changes — skip and note for manual review
-
----
-
-## Phase 4: VERIFY
-
-Print: \`--- [VERIFY] Running final verification ---\`
-
-1. Run the full test suite one final time
-2. Run the linter
-3. Call \`checkup_get_progress\` for the final summary
-
-Then print the **final report** for the user:
+After the audit is complete and you have called \`checkup_get_report\`, print the full report to the user. Then print the handoff message:
 
 \`\`\`
 ========================================
-  CHECKUP COMPLETE
+  AUDIT COMPLETE
 ========================================
 
-AUDIT RESULTS
-  Phases completed: [N]/10
-  Total findings:   [N]
-  By severity:      [N] Critical | [N] High | [N] Medium
+Phases completed: [N]/10
+Total findings:   [N]
+By severity:      [N] Critical | [N] High | [N] Medium
 
-FIX RESULTS
-  Fixes applied:    [N]
-  Fixes skipped:    [N]
-  Fixes failed:     [N]
+Session ID: [session-id]
 
-VERIFICATION
-  Tests:  [PASS/FAIL]
-  Lint:   [PASS/FAIL]
+To apply fixes, start a new conversation and use:
+  checkup-fix(sessionId: "[session-id]")
 
-SKIPPED FIXES (manual review recommended):
-  - [FIX-ID]: [title] — [reason skipped]
-  - [FIX-ID]: [title] — [reason skipped]
-
+The server stores all findings for 2 hours.
 ========================================
 \`\`\`
+
+**STOP HERE.** Do NOT proceed to apply fixes. The fix phase runs in a separate conversation with a clean context window. The user will start a new chat and use the \`checkup-fix\` prompt with the session ID above.
 
 ---
 
 ## Context Management
 
-This workflow is long. To manage context effectively:
-- **After completing the audit** (Phase 2): summarize the top findings before starting fixes
-- **Between fix batches**: call \`checkup_get_progress\` to re-orient if needed
-- **If approaching context limit**: print the session ID and tell the user to resume in a new conversation:
-  \`\`\`
-  --- [PAUSED] Context limit approaching ---
-  Session ID: [session-id]
-  Progress: [N]/[N] phases, [N]/[N] fixes applied
-  To resume: start a new conversation and say "resume checkup session [session-id]"
-  \`\`\`
+This workflow covers 10 audit phases. To manage context effectively:
+
+### Between Phases
+- **Be concise but thorough**: prioritize Critical/High findings. Include all that are relevant — do not artificially cap your findings count.
+- **Do NOT repeat prior phase findings** in your analysis text — the server injects cross-references automatically.
+- **After completing each phase**, move directly to the next. Do NOT summarize what you just found.
+
+### Phase Group Checkpoints
+After completing each group, print a brief checkpoint:
+- **After P2** (Foundation complete): Print finding count and severity breakdown for P1-P2
+- **After P5** (Core analysis complete): Print finding count for P3-P5 and top 3 cross-cutting themes
+- **After P9** (All analysis complete): Call \`checkup_get_progress\` before starting P10
+
+### If Context Runs Low
+1. Call \`checkup_compact_context\` for a minimal summary of all prior work (~1-2KB)
+2. If past P5 and running low, skip remaining independent phases (P6-P9) with brief reasons via \`checkup_skip_phase\`
+3. Never skip P10 — it aggregates all findings
+4. As last resort, print the session ID and tell the user to resume:
+   \`\`\`
+   --- [PAUSED] Context limit approaching ---
+   Session ID: [session-id]
+   Progress: [N]/10 phases complete
+   To resume: start a new conversation and say "resume checkup session [session-id]"
+   \`\`\`
 
 ## Error Recovery
 
 - If a tool call fails: call \`checkup_list_sessions\` to find existing sessions or start fresh
-- If no test suite exists: skip verification but warn the user
 - If context is full: report progress and session ID for manual continuation
 
 ---

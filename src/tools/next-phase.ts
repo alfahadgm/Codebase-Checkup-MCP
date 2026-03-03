@@ -3,6 +3,7 @@ import { getSession, completePhase } from '../session/manager.js';
 import { buildPhasePrompt } from '../lib/prompt-builder.js';
 import { findingFormat } from '../prompts/templates/finding-format.js';
 import { validateFindings } from '../lib/findings-validator.js';
+import { compressSummaryToOneLiner } from '../lib/cross-reference.js';
 
 export const nextPhaseSchema = z.object({
   sessionId: z.string().describe('The session ID returned by checkup_start_audit.'),
@@ -75,10 +76,19 @@ export function handleNextPhase(input: NextPhaseInput) {
   const prompt = buildPhasePrompt(nextPhase, updated.completedPhases);
   const outputFmt = findingFormat(nextPhase.id, nextPhase.name);
 
-  const priorFindingSummaries = updated.completedPhases.map((p) => {
-    const shortSummary = p.findingSummary.split('\n').slice(0, 5).join(' ');
-    const truncated = shortSummary.length > 500 ? shortSummary.slice(0, 500) + '...' : shortSummary;
-    return `**${p.phaseId}:** ${truncated}`;
+  // Tier prior finding summaries: recent phases get more detail, older ones get one-liners
+  const total = updated.completedPhases.length;
+  const priorFindingSummaries = updated.completedPhases.map((p, i) => {
+    const recency = total - 1 - i;
+    if (recency < 3) {
+      // Recent: short summary (first 5 lines, 500 char max)
+      const shortSummary = p.findingSummary.split('\n').slice(0, 5).join(' ');
+      const truncated =
+        shortSummary.length > 500 ? shortSummary.slice(0, 500) + '...' : shortSummary;
+      return `**${p.phaseId}:** ${truncated}`;
+    }
+    // Older: one-liner with finding count and severity
+    return compressSummaryToOneLiner(p.phaseId, p.findings);
   });
 
   const completedIds = updated.completedPhases.map((p) => p.phaseId);

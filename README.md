@@ -4,7 +4,7 @@
 
 **Autonomous 10-phase codebase auditor for any MCP client.**
 
-One command. Ten phases. Prioritized fixes. Verified by tests.
+One command. Ten phases. Prioritized fixes. Clean context for each step.
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/alfahadgm/Codebase-Checkup-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/alfahadgm/Codebase-Checkup-MCP/actions/workflows/ci.yml)
@@ -21,22 +21,27 @@ One command. Ten phases. Prioritized fixes. Verified by tests.
 Codebase Checkup is a **prompt-based [Model Context Protocol](https://modelcontextprotocol.io) server** that provides structured audit prompts and manages session state. The LLM client (Claude Code, Claude Desktop, Cursor, or any MCP-compatible client) does the actual code analysis using its own file-reading tools. **The server never reads your codebase directly.**
 
 ```
-You: "start checkup"
+Conversation 1: "start checkup"
       |
       v
-  [Plan] --> [Audit 10 phases] --> [Fix critical issues] --> [Verify tests pass]
-      |              |                      |                        |
-      v              v                      v                        v
-  Scan project   P1: Dead Code        Apply critical          Run test suite
-  structure      P2: Testing           & high-priority         Report results
-  Identify       P3: Logic Gaps        fixes in batches
-  tech stack     P4: API Contracts     Record outcomes
-                 P5: Architecture
-                 P6: Error Handling
-                 P7: UX & Usability
-                 P8: Missing UX
-                 P9: Performance
-                 P10: Synthesis
+  [Plan] --> [Audit 10 phases] --> [Report + Session ID]
+      |              |                      |
+      v              v                      v
+  Scan project   P1-P10 analysis       Print findings summary
+  Identify       Cross-referenced      Hand off session ID
+  tech stack     findings              for fix phase
+
+--- User opens a new chat ---
+
+Conversation 2: checkup-fix(sessionId: "...")
+      |
+      v
+  [Load findings] --> [Pick severity] --> [Fix in batches] --> [Verify]
+      |                      |                    |                 |
+      v                      v                    v                 v
+  Re-read from         Critical only?       Apply fixes       Run tests
+  server via           Critical+High?       User confirms     Report results
+  session ID           All?                 each batch
 ```
 
 ---
@@ -179,31 +184,41 @@ After npm publish:
 
 ### Autonomous Mode (recommended)
 
-Type this in your MCP client:
+Two conversations, clean context for fixes:
 
+**Step 1 — Audit** (type in your MCP client):
 ```
 start checkup
 ```
 
-The agent handles everything end-to-end: Plan, Audit (10 phases), Fix (prioritized), Verify (tests + lint). You get a final summary of everything found and fixed.
+The agent autonomously plans and runs all 10 audit phases. When done, it prints a findings summary and a **session ID**.
 
-**For zero interruptions** with Claude Code:
+**Step 2 — Fix** (open a new chat, use the `checkup-fix` prompt with your session ID):
+```
+checkup-fix(sessionId: "checkup-abc123-1")
+```
+
+The agent loads your findings from the server, asks which fixes you want (Critical / Critical+High / All), then applies them in batches with your confirmation between each batch.
+
+> The session ID is valid for 2 hours. The server stores all findings — nothing is lost between conversations.
+
+**For zero interruptions** on the audit phase with Claude Code:
 
 ```bash
 claude --dangerously-skip-permissions
 ```
 
-Then type `start checkup`. No approval prompts will appear.
+Then type `start checkup`. No approval prompts will appear during the audit.
 
 ### Audit Only (no fixes)
 
-If you want the audit report without auto-fixing:
+If you just want the report:
 
 ```
 run a full checkup audit
 ```
 
-The agent runs all 10 phases and delivers a report with prioritized findings. You decide what to fix.
+The agent runs all 10 phases and delivers a report. You decide what to fix manually.
 
 ### Single Phase
 
@@ -252,14 +267,15 @@ P1 findings are excluded from later phases. P2 calibrates severity for P3-P9. P6
 
 ## How Fixes Work
 
-After the audit completes, the agent enters the fix phase:
+Fixes run in a **separate conversation** with a clean context window. You control what gets fixed:
 
-1. **Extract** -- Generate a prioritized fix plan from all findings
-2. **Apply** -- Critical + Quick Fix issues first (highest ROI), then high-priority
-3. **Test** -- Run tests after each batch to catch regressions early
-4. **Record** -- Log each fix outcome (completed / skipped / failed)
+1. **Load** -- Agent calls the server with your session ID to retrieve all findings
+2. **Choose** -- You pick the severity level: Critical only, Critical+High, or All
+3. **Apply** -- Fixes are applied in batches, with your confirmation before each batch
+4. **Test** -- Tests run after each batch to catch regressions early
+5. **Report** -- Final summary of applied, skipped, and failed fixes
 
-**What gets auto-fixed:**
+**What gets fixed:**
 - Critical + Quick Fix issues (highest ROI)
 - High-priority issues with clear solutions
 - Confirmed findings with specific file/line references
@@ -296,7 +312,8 @@ After the audit completes, the agent enters the fix phase:
 |--------|-------------|
 | `checkup-p1` through `checkup-p10` | Individual phase audit prompts |
 | `checkup-full-audit` | Run the full 10-phase audit (audit only, no fixes) |
-| `checkup-autonomous` | Complete autonomous workflow: Plan, Audit, Fix, Verify |
+| `checkup-autonomous` | Autonomous audit: Plan, run 10 phases, hand off session ID for fixes |
+| `checkup-fix` | Apply fixes from a completed audit (takes `sessionId` argument) |
 
 ### Resources
 

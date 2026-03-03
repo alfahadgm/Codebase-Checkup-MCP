@@ -142,6 +142,51 @@ export function extractSeverityCounts(findings: string): {
 }
 
 /**
+ * Compress a cross-reference summary to just remediation table data rows.
+ * Strips the title line, section headers, and column headers — keeps only `| ... |` data rows.
+ * Falls back to finding ID lines (e.g., "P3.1: Missing null check") if no table rows found.
+ */
+export function compressSummaryToTableOnly(findingSummary: string): string {
+  const lines = findingSummary.split('\n');
+
+  // Extract table data rows (lines starting with | that aren't header/separator)
+  const tableRows = lines.filter(
+    (l) => l.startsWith('|') && !l.includes('---') && !l.toLowerCase().includes('| id'),
+  );
+
+  if (tableRows.length > 0) {
+    return tableRows.join('\n');
+  }
+
+  // Fallback: extract finding ID lines (e.g., "### P3.1: Missing null check")
+  const findingIdLines = lines.filter((l) => /^###?\s+P\d+\.\d+:/.test(l));
+  if (findingIdLines.length > 0) {
+    return findingIdLines.join('\n');
+  }
+
+  // Last resort: return a trimmed version
+  const trimmed = findingSummary.slice(0, 300);
+  return trimmed + (findingSummary.length > 300 ? '...' : '');
+}
+
+/**
+ * Compress a phase's findings to a one-liner with finding count and severity breakdown.
+ * Example: "**P1:** 3 findings (2 critical, 1 high)"
+ */
+export function compressSummaryToOneLiner(phaseId: string, findings: string): string {
+  const count = countFindings(phaseId, findings);
+  const severity = extractSeverityCounts(findings);
+
+  const parts: string[] = [];
+  if (severity.critical > 0) parts.push(`${severity.critical} critical`);
+  if (severity.high > 0) parts.push(`${severity.high} high`);
+  if (severity.medium > 0) parts.push(`${severity.medium} medium`);
+
+  const severityStr = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+  return `**${phaseId}:** ${count} finding${count !== 1 ? 's' : ''}${severityStr}`;
+}
+
+/**
  * Extract effort counts from remediation table by parsing the Effort column.
  */
 export function extractEffortCounts(findings: string): {

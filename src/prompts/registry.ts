@@ -1,7 +1,9 @@
+import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ALL_PHASES } from '../lib/phase-config.js';
 import { PHASE_PROMPTS } from './templates/index.js';
 import { autonomousWorkflowPrompt } from './templates/autonomous-workflow.js';
+import { fixWorkflowPrompt } from './templates/fix-workflow.js';
 
 /**
  * Register all MCP prompts with the server.
@@ -62,9 +64,11 @@ You MUST run this audit to completion without stopping to ask the user for confi
 ${ALL_PHASES.map((p) => `- **${p.id}:** ${p.name}`).join('\n')}
 
 ## Context Management
-- Each phase's findings should be 500-2000 words — focus on Critical/High findings, not exhaustive catalogs
-- If you are approaching your context limit, note the session ID and tell the user to resume with \`checkup_start_audit({ resumeSessionId: "<session-id>" })\`
-- You can also call \`checkup_list_sessions\` to discover active sessions for resume
+- Prioritize Critical/High findings but include all that are relevant — do not artificially limit findings count
+- **Do NOT repeat prior phase findings** in your analysis — the server injects cross-references into each phase prompt automatically
+- After completing each phase, move directly to the next without summarizing
+- If running low on context, call \`checkup_compact_context\` for a minimal summary of all prior work
+- If approaching your context limit, note the session ID and tell the user to resume with \`checkup_start_audit({ resumeSessionId: "<session-id>" })\`
 - The server stores all your findings, so nothing is lost when you resume
 
 ## Critical Rules
@@ -81,10 +85,10 @@ Start now by calling \`checkup_start_audit\`.`,
     }),
   );
 
-  // Autonomous workflow prompt — Plan → Audit → Fix → Verify
+  // Autonomous workflow prompt — Plan → Audit → Handoff
   server.prompt(
     'checkup-autonomous',
-    'Run a complete autonomous workflow: Plan the audit, run all 10 phases, apply prioritized fixes, and verify with tests. No user interaction needed.',
+    'Run a full autonomous audit: Plan, run all 10 phases, then hand off a session ID for fixes in a new conversation via checkup-fix.',
     {},
     () => ({
       messages: [
@@ -93,6 +97,30 @@ Start now by calling \`checkup_start_audit\`.`,
           content: {
             type: 'text',
             text: autonomousWorkflowPrompt(),
+          },
+        },
+      ],
+    }),
+  );
+
+  // Fix workflow prompt — runs in a new conversation after the audit
+  server.prompt(
+    'checkup-fix',
+    'Apply fixes from a completed audit. Provide the session ID from checkup-autonomous. Starts a new conversation with clean context.',
+    {
+      sessionId: z
+        .string()
+        .describe(
+          'The session ID from the completed audit (printed at the end of checkup-autonomous).',
+        ),
+    },
+    (args) => ({
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: fixWorkflowPrompt(args.sessionId),
           },
         },
       ],

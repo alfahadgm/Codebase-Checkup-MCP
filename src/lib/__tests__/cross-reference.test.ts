@@ -5,6 +5,8 @@ import {
   extractSeverityCounts,
   parseRemediationTable,
   extractEffortCounts,
+  compressSummaryToTableOnly,
+  compressSummaryToOneLiner,
 } from '../cross-reference.js';
 
 const SAMPLE_FINDINGS = `# P1: Dead Code Detection
@@ -173,5 +175,64 @@ describe('extractCrossRefSummary - improved fallback', () => {
     // Should include the Impact/Effort/Confidence line alongside the header
     expect(summary).toContain('P3.1');
     expect(summary).toContain('**Impact:**');
+  });
+});
+
+describe('compressSummaryToTableOnly', () => {
+  it('extracts table data rows from a summary with remediation table', () => {
+    const summary = extractCrossRefSummary('P1', SAMPLE_FINDINGS);
+    const compressed = compressSummaryToTableOnly(summary);
+    // Should contain data rows but NOT the title or column header
+    expect(compressed).toContain('P1.1');
+    expect(compressed).toContain('P1.2');
+    expect(compressed).toContain('P1.3');
+    expect(compressed).not.toContain('# P1: Dead Code Detection');
+    expect(compressed).not.toContain('| ID');
+    expect(compressed).not.toContain('---');
+  });
+
+  it('falls back to finding ID lines when no table rows', () => {
+    const summary = extractCrossRefSummary('P3', FINDINGS_NO_TABLE);
+    const compressed = compressSummaryToTableOnly(summary);
+    expect(compressed).toContain('P3.1');
+    expect(compressed).toContain('P3.2');
+  });
+
+  it('truncates as last resort for unstructured content', () => {
+    const summary = extractCrossRefSummary('P5', FINDINGS_NOTHING_USEFUL);
+    const compressed = compressSummaryToTableOnly(summary);
+    // Should return something reasonable, truncated
+    expect(compressed.length).toBeLessThanOrEqual(400);
+  });
+});
+
+describe('compressSummaryToOneLiner', () => {
+  it('produces a one-liner with finding count and severity', () => {
+    const oneLiner = compressSummaryToOneLiner('P1', SAMPLE_FINDINGS);
+    expect(oneLiner).toContain('**P1:**');
+    expect(oneLiner).toContain('3 findings');
+    expect(oneLiner).toContain('critical');
+    expect(oneLiner).toContain('high');
+  });
+
+  it('handles findings with no remediation table', () => {
+    const oneLiner = compressSummaryToOneLiner('P3', FINDINGS_NO_TABLE);
+    expect(oneLiner).toContain('**P3:**');
+    // countFindings finds P3.1 and P3.2 in the text
+    expect(oneLiner).toContain('2 findings');
+    // No remediation table → extractSeverityCounts returns zeros → no severity breakdown
+    expect(oneLiner).not.toContain('critical');
+  });
+
+  it('handles zero findings', () => {
+    const oneLiner = compressSummaryToOneLiner('P9', 'No findings for this phase.');
+    expect(oneLiner).toBe('**P9:** 0 findings');
+  });
+
+  it('uses singular "finding" for exactly one', () => {
+    const withTable = `## Remediation Table\n| ID | Finding | Impact | Effort | Confidence | Cross-Refs |\n|---|---|---|---|---|---|\n| P4.1 | Missing auth | Revenue Loss | Quick Fix | Confirmed | — |\n### P4.1: test`;
+    const oneLiner = compressSummaryToOneLiner('P4', withTable);
+    expect(oneLiner).toContain('1 finding');
+    expect(oneLiner).not.toContain('1 findings');
   });
 });
